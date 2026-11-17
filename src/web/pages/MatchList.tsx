@@ -1,5 +1,5 @@
 import type { MatchListRow, getFilterOptions, summarize } from '../../server/queries.ts';
-import { ChampIcon, ResultBadge, mmss, navigate, useApi } from '../lib.tsx';
+import { ChampIcon, ResultBadge, fmtDec, fmtKda, fmtPct, mmss, navigate, useApi } from '../lib.tsx';
 
 type Resp = {
   rows: MatchListRow[];
@@ -26,11 +26,11 @@ export function MatchList({ query }: { query: string }) {
     <>
       <div className="tiles">
         <Tile label="試合数" value={String(s.games)} sub={`${s.wins}勝 ${s.losses}敗`} />
-        <Tile label="勝率" value={`${s.winRate}%`} />
-        <Tile label="KDA" value={String(s.kda)} sub={`${s.avgKills} / ${s.avgDeaths} / ${s.avgAssists}`} />
-        <Tile label="平均デス" value={String(s.avgDeaths)} />
-        <Tile label="CS/分" value={String(s.csPerMin)} />
-        <Tile label="キル関与" value={`${s.killParticipation}%`} />
+        <Tile label="勝率" value={fmtPct(s.winRate)} />
+        <Tile label="KDA" value={fmtKda(s.kda)} sub={`${fmtDec(s.avgKills)} / ${fmtDec(s.avgDeaths)} / ${fmtDec(s.avgAssists)}`} />
+        <Tile label="平均デス" value={fmtDec(s.avgDeaths)} />
+        <Tile label="CS/分" value={fmtDec(s.csPerMin)} />
+        <Tile label="キル関与" value={fmtPct(s.killParticipation)} />
       </div>
       {filtered && <p className="muted small" style={{ marginTop: -8 }}>※ 上の集計は絞り込み後の試合が対象です</p>}
 
@@ -57,7 +57,7 @@ export function MatchList({ query }: { query: string }) {
       </div>
 
       {data.rows.length === 0 ? (
-        <div className="card empty">試合がありません。<code>npm run sync</code> で取り込んでください。</div>
+        <div className="card empty">まだ試合がありません — <code>npm run sync</code> で取り込めます</div>
       ) : (
         <div className="table-wrap">
           <table>
@@ -85,9 +85,9 @@ export function MatchList({ query }: { query: string }) {
                   <td>{r.roleLabel}</td>
                   <td>{r.opponent ?? '-'}</td>
                   <td className="num">{r.kills} / {r.deaths} / {r.assists}</td>
-                  <td className="num">{r.kda}</td>
-                  <td className="num">{r.csPerMin}</td>
-                  <td className="num">{r.killParticipation}%</td>
+                  <td className="num">{fmtKda(r.kda)}</td>
+                  <td className="num">{fmtDec(r.csPerMin)}</td>
+                  <td className="num">{fmtPct(r.killParticipation)}</td>
                   <td className="num">{mmss(r.durationSec)}</td>
                   <td>{r.reviewed ? '✓ 済' : <span className="muted">未</span>}</td>
                 </tr>

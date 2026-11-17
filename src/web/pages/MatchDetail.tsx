@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { getMatchDetail } from '../../server/queries.ts';
 import type { getDeathMap } from '../../server/deathmap.ts';
-import { ChampIcon, ChartTooltip, ItemIcon, ResultBadge, fmt, useApi } from '../lib.tsx';
+import { ChampIcon, ChartTooltip, ItemIcon, ResultBadge, diffClass, fmt, fmtDec, fmtDiff, fmtGold, fmtKda, fmtRatio, useApi } from '../lib.tsx';
 import { DeathMap, DeathMapLegend, describePoint } from '../DeathMap.tsx';
 
 type Detail = NonNullable<Awaited<ReturnType<typeof getMatchDetail>>>;
@@ -37,7 +37,7 @@ export function MatchDetail({ matchId }: { matchId: string }) {
           <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
             <div className="big">{me.kills} / {me.deaths} / {me.assists}</div>
             <div className="muted">
-              KDA {((me.kills + me.assists) / Math.max(1, me.deaths)).toFixed(2)} ・ キル関与 {Math.round(me.killParticipation * 100)}% ・ CS {me.cs}（{(me.cs / (m.durationSec / 60)).toFixed(1)}/分）
+              KDA {fmtKda((me.kills + me.assists) / Math.max(1, me.deaths))} ・ キル関与 {fmtRatio(me.killParticipation)} ・ CS {fmt(me.cs)}（{fmtDec(me.cs / (m.durationSec / 60))}/分）
             </div>
           </div>
         </div>
@@ -146,13 +146,13 @@ function Compare({ me, opp }: { me: P; opp: P }) {
         <tbody>
           {rows.map((r) => {
             const d = r.a - r.b;
-            const good = r.neutral || d === 0 ? '' : (d > 0) !== !!r.lowerIsBetter ? 'better' : 'worse';
+            const good = r.neutral ? '' : diffClass(d, r.lowerIsBetter);
             return (
               <tr key={r.label}>
                 <td>{r.label}</td>
                 <td className="num">{fmt(r.a)}</td>
                 <td className="num">{fmt(r.b)}</td>
-                <td className={`num ${good}`}>{d > 0 ? '+' : ''}{fmt(d)}</td>
+                <td className={`num ${good}`}>{fmtDiff(d)}</td>
               </tr>
             );
           })}
@@ -168,14 +168,14 @@ function GoldChart({ data }: { data: Detail['goldGraph'] }) {
     <div className="card" style={{ height: 300 }}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
-          <CartesianGrid stroke="var(--grid)" vertical={false} />
-          <XAxis dataKey="minute" tickFormatter={(v) => `${v}分`} stroke="var(--grid)" />
-          <YAxis stroke="var(--grid)" width={56} tickFormatter={(v) => fmt(v)} />
-          <ReferenceLine y={0} stroke="var(--text-3)" />
-          <Tooltip content={<ChartTooltip labelFormatter={(l: number) => `${l}分`} unit="G" />} />
+          <CartesianGrid stroke="var(--line-soft)" vertical={false} />
+          <XAxis dataKey="minute" tickFormatter={(v) => `${v}分`} stroke="var(--line)" />
+          <YAxis stroke="var(--line)" width={56} tickFormatter={(v) => fmtDiff(v)} />
+          <ReferenceLine y={0} stroke="var(--ink-mute)" />
+          <Tooltip content={<ChartTooltip labelFormatter={(l: number) => `${l}分`} valueFormatter={fmtDiff} unit="G" />} />
           <Legend />
-          <Line type="monotone" dataKey="laneGoldDiff" name="対面とのゴールド差" stroke="var(--ally)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-          <Line type="monotone" dataKey="teamGoldDiff" name="チームのゴールド差" stroke="#eb6834" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+          <Line type="monotone" dataKey="laneGoldDiff" name="対面とのゴールド差" stroke="var(--me)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+          <Line type="monotone" dataKey="teamGoldDiff" name="チームのゴールド差" stroke="var(--primary)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -197,8 +197,8 @@ function ObjectiveBars({ mine, enemy }: { mine: Detail['teams'][number]; enemy: 
   return (
     <div className="card">
       <div className="legend">
-        <span><span className="sw" style={{ background: 'var(--ally)' }} />味方</span>
-        <span><span className="sw" style={{ background: 'var(--enemy)' }} />敵</span>
+        <span><span className="sw" style={{ background: 'var(--win)' }} />味方</span>
+        <span><span className="sw" style={{ background: 'var(--loss)' }} />敵</span>
         <span>{first('ファーストブラッド', mine.firstBlood, enemy.firstBlood)}</span>
         <span>{first('ファーストタワー', mine.firstTower, enemy.firstTower)}</span>
         <span>{first('ファーストドラゴン', mine.firstDragon, enemy.firstDragon)}</span>
@@ -257,16 +257,16 @@ function Scoreboard({ rows, myTeamId, durationSec }: { rows: Detail['participant
               .filter((p) => p.teamId === t)
               .map((p) => (
                 <tr key={p.participantId} className={p.isMe ? 'me' : ''}>
-                  <td style={{ borderLeft: `4px solid var(${t === myTeamId ? '--ally' : '--enemy'})` }}>{t === myTeamId ? '味方' : '敵'}</td>
+                  <td style={{ borderLeft: `3px solid var(${t === myTeamId ? '--win' : '--loss'})` }}>{t === myTeamId ? '味方' : '敵'}</td>
                   <td>{p.roleLabel}</td>
                   <td><span className="champ"><ChampIcon k={p.championKey} name={p.champion} />{p.champion}</span></td>
                   <td className="small">{p.playerName}{p.isMe ? '（自分）' : ''}</td>
                   <td className="num">{p.kills} / {p.deaths} / {p.assists}</td>
-                  <td className="num">{Math.round(p.killParticipation * 100)}%</td>
+                  <td className="num">{fmtRatio(p.killParticipation)}</td>
                   <td className="num">{fmt(p.damageDealt)}</td>
                   <td className="num">{fmt(p.damageTaken)}</td>
-                  <td className="num">{fmt(p.gold)}</td>
-                  <td className="num" title={`${(p.cs / (durationSec / 60)).toFixed(1)}/分`}>{p.cs}</td>
+                  <td className="num">{fmtGold(p.gold)}</td>
+                  <td className="num" title={`${fmtDec(p.cs / (durationSec / 60))}/分`}>{p.cs}</td>
                   <td className="num">{p.level}</td>
                   <td className="num">{p.wardsPlaced}</td>
                   <td className="num">{p.wardsKilled}</td>
@@ -303,12 +303,12 @@ function Timeline({ events }: { events: Detail['events'] }) {
     <div className="card">
       <div className="filters">
         {EVENT_FILTERS.map((x) => (
-          <button key={x} onClick={() => setF(x)} style={x === f ? { background: 'var(--surface-2)', fontWeight: 600 } : undefined}>{x}</button>
+          <button key={x} onClick={() => setF(x)} aria-pressed={x === f}>{x}</button>
         ))}
       </div>
       <div className="legend">
-        <span><span className="sw" style={{ background: 'var(--ally)' }} />味方が取った</span>
-        <span><span className="sw" style={{ background: 'var(--enemy)' }} />敵が取った</span>
+        <span><span className="sw" style={{ background: 'var(--win)' }} />味方が取った</span>
+        <span><span className="sw" style={{ background: 'var(--loss)' }} />敵が取った</span>
         <span><span className="mark">★キル</span> 自分の関与</span>
       </div>
       <ul className="timeline">

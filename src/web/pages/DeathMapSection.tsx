@@ -2,12 +2,12 @@ import { useState } from 'react';
 import type { getDeathMap } from '../../server/deathmap.ts';
 import { ZONES } from '../../server/map.ts';
 import { DeathMap, DeathMapLegend, TIME_BANDS, bandOf, isSolo } from '../DeathMap.tsx';
-import { useApi } from '../lib.tsx';
+import { fmtDec, fmtPct, useApi } from '../lib.tsx';
 
 type D = Awaited<ReturnType<typeof getDeathMap>>;
 
 const LIMITS = [10, 20, 50, 0] as const;
-const pct = (n: number, d: number) => (d ? `${Math.round((n / d) * 100)}%` : '-');
+const pct = (n: number, d: number) => (d ? fmtPct((n / d) * 100) : '-');
 
 /** 傾向ページの「デスマップ」 */
 export function DeathMapSection() {
@@ -61,7 +61,7 @@ export function DeathMapSection() {
               <div>
                 <h3>デス</h3>
                 <div className="big">{deaths.length}</div>
-                <div className="muted small">{data.matchCount}試合・平均 {data.matchCount ? Math.round((deaths.length / data.matchCount) * 10) / 10 : 0}</div>
+                <div className="muted small">{data.matchCount}試合・平均 {fmtDec(data.matchCount ? deaths.length / data.matchCount : 0)}</div>
               </div>
               <div>
                 <h3>ソロデス率</h3>
