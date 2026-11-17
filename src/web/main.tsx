@@ -26,7 +26,7 @@ function App() {
   return (
     <>
       <header className="top">
-        <h1>Rift Log</h1>
+        <h1><span className="mark">◆</span>Rift Log</h1>
         <nav>
           <a href="#/" className={page !== 'trends' ? 'active' : ''}>試合一覧</a>
           <a href="#/trends" className={page === 'trends' ? 'active' : ''}>傾向</a>

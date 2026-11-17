@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { getTrends } from '../../server/queries.ts';
-import { ChartTooltip, navigate, useApi } from '../lib.tsx';
+import { ChartTooltip, fmtDec, fmtKda, fmtPct, navigate, useApi } from '../lib.tsx';
+import { DeathMapSection } from './DeathMapSection.tsx';
 
 type T = Awaited<ReturnType<typeof getTrends>>;
 type Group = T['byChampion'][number];
@@ -11,7 +12,7 @@ export function Trends() {
   const [tab, setTab] = useState<'byChampion' | 'byRole' | 'byOpponent'>('byChampion');
   if (error) return <div className="empty">{error}</div>;
   if (!data) return <div className="empty">読み込み中…</div>;
-  if (data.summary.games === 0) return <div className="card empty">まだ試合がありません。</div>;
+  if (data.summary.games === 0) return <div className="card empty">まだ試合がありません — <code>npm run sync</code> で取り込めます</div>;
 
   return (
     <>
@@ -24,7 +25,7 @@ export function Trends() {
             ['byOpponent', '対面別'],
           ] as const
         ).map(([k, l]) => (
-          <button key={k} onClick={() => setTab(k)} style={k === tab ? { background: 'var(--surface-2)', fontWeight: 600 } : undefined}>{l}</button>
+          <button key={k} onClick={() => setTab(k)} aria-pressed={k === tab}>{l}</button>
         ))}
       </div>
       <GroupTable rows={data[tab]} nameLabel={tab === 'byChampion' ? 'チャンピオン' : tab === 'byRole' ? 'ロール' : '対面'} />
@@ -35,6 +36,8 @@ export function Trends() {
         <SeriesChart title="デス数" data={data.series} dataKey="deaths" />
         <SeriesChart title="キル関与（%）" data={data.series} dataKey="killParticipation" unit="%" />
       </div>
+
+      <DeathMapSection />
 
       <div className="grid2" style={{ marginTop: 8 }}>
         <section>
@@ -56,7 +59,7 @@ export function Trends() {
                     <td>{o.label}</td>
                     <td className="num">{o.mine}{o.unit}</td>
                     <td className="num">{o.enemy}{o.unit}</td>
-                    <td className="num"><b>{o.rate === null ? '-' : `${o.rate}%`}</b></td>
+                    <td className="num"><b>{fmtPct(o.rate)}</b></td>
                     <td>
                       <div className="bar">
                         {o.rate !== null && <div className="a" style={{ width: `${o.rate}%` }} />}
@@ -130,11 +133,11 @@ function GroupTable({ rows, nameLabel }: { rows: Group[]; nameLabel: string }) {
               <td>{r.name}</td>
               <td className="num">{r.games}</td>
               <td className="num">{r.wins}勝{r.losses}敗</td>
-              <td className="num"><b>{r.winRate}%</b></td>
-              <td className="num">{r.kda}</td>
-              <td className="num">{r.avgKills} / {r.avgDeaths} / {r.avgAssists}</td>
-              <td className="num">{r.csPerMin}</td>
-              <td className="num">{r.killParticipation}%</td>
+              <td className="num"><b>{fmtPct(r.winRate)}</b></td>
+              <td className="num">{fmtKda(r.kda)}</td>
+              <td className="num">{fmtDec(r.avgKills)} / {fmtDec(r.avgDeaths)} / {fmtDec(r.avgAssists)}</td>
+              <td className="num">{fmtDec(r.csPerMin)}</td>
+              <td className="num">{fmtPct(r.killParticipation)}</td>
             </tr>
           ))}
         </tbody>
@@ -149,18 +152,18 @@ function SeriesChart({ title, data, dataKey, unit }: { title: string; data: T['s
     <div className="card">
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
         <b>{title}</b>
-        <span className="muted small">平均 {avg}{unit ?? ''}</span>
+        <span className="muted small">平均 {unit === '%' ? fmtPct(avg) : fmtDec(avg)}</span>
       </div>
       <div style={{ height: 200 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 6, right: 8, bottom: 0, left: -16 }} onClick={(s: any) => s?.activePayload?.[0] && navigate(`/match/${s.activePayload[0].payload.matchId}`)}>
-            <CartesianGrid stroke="var(--grid)" vertical={false} />
-            <XAxis dataKey="index" stroke="var(--grid)" tickFormatter={(i) => data[i - 1]?.label ?? ''} minTickGap={16} />
-            <YAxis stroke="var(--grid)" allowDecimals={dataKey === 'csPerMin'} />
+            <CartesianGrid stroke="var(--line-soft)" vertical={false} />
+            <XAxis dataKey="index" stroke="var(--line)" tickFormatter={(i) => data[i - 1]?.label ?? ''} minTickGap={16} />
+            <YAxis stroke="var(--line)" allowDecimals={dataKey === 'csPerMin'} />
             <Tooltip
               content={
                 <ChartTooltip
-                  unit={unit}
+                  valueFormatter={unit === '%' ? fmtPct : dataKey === 'csPerMin' ? fmtDec : undefined}
                   labelFormatter={(_: unknown, payload: any[]) => {
                     const p = payload?.[0]?.payload;
                     return p ? `${p.label} ${p.champion}（${p.win ? '勝利' : '敗北'}）` : '';
@@ -168,7 +171,7 @@ function SeriesChart({ title, data, dataKey, unit }: { title: string; data: T['s
                 />
               }
             />
-            <Line type="monotone" dataKey={dataKey} name={title} stroke="var(--ally)" strokeWidth={2} dot={{ r: 4, strokeWidth: 2, fill: 'var(--surface)' }} activeDot={{ r: 6 }} />
+            <Line type="monotone" dataKey={dataKey} name={title} stroke="var(--primary)" strokeWidth={2} isAnimationActive={false} dot={{ r: 4, strokeWidth: 2, fill: 'var(--surface)' }} activeDot={{ r: 6 }} />
           </LineChart>
         </ResponsiveContainer>
       </div>
