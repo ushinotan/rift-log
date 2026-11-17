@@ -1,0 +1,33 @@
+{
+  "name": "rift-log",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "League of Legends ランク戦の振り返りアプリ（JPサーバー）",
+  "scripts": {
+    "dev": "vite",
+    "sync": "tsx src/cli/sync.ts",
+    "match": "tsx src/cli/match.ts",
+    "review:add": "tsx src/cli/review-add.ts",
+    "pending": "tsx src/cli/pending.ts",
+    "db:generate": "drizzle-kit generate",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.18.0",
+    "drizzle-orm": "^0.45.4",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "recharts": "^3.10.1"
+  }
+}
