@@ -171,7 +171,7 @@ function SeriesChart({ title, data, dataKey, unit }: { title: string; data: T['s
                 />
               }
             />
-            <Line type="monotone" dataKey={dataKey} name={title} stroke="var(--primary)" strokeWidth={2} dot={{ r: 4, strokeWidth: 2, fill: 'var(--surface)' }} activeDot={{ r: 6 }} />
+            <Line type="monotone" dataKey={dataKey} name={title} stroke="var(--primary)" strokeWidth={2} isAnimationActive={false} dot={{ r: 4, strokeWidth: 2, fill: 'var(--surface)' }} activeDot={{ r: 6 }} />
           </LineChart>
         </ResponsiveContainer>
       </div>
