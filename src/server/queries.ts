@@ -25,6 +25,10 @@ export async function listMatches(filter: { result?: string; champion?: string; 
   const reviewed = new Set(
     (await db.selectDistinct({ id: reviews.matchId }).from(reviews)).map((r) => r.id),
   );
+  // 対面のアイコン用: チャンピオン名 → Data Dragon のキー
+  const champKeys = new Map(
+    (await db.selectDistinct({ name: participants.champion, key: participants.championKey }).from(participants)).map((r) => [r.name, r.key]),
+  );
   return rows.map(({ m, p }) => ({
     matchId: m.matchId,
     startJst: m.startJst,
@@ -38,6 +42,7 @@ export async function listMatches(filter: { result?: string; champion?: string; 
     role: m.myRole,
     roleLabel: roleLabel(m.myRole),
     opponent: m.opponentChampion,
+    opponentKey: m.opponentChampion ? (champKeys.get(m.opponentChampion) ?? null) : null,
     patch: m.patch,
     kills: p.kills,
     deaths: p.deaths,
