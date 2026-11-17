@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { getMatchDetail } from '../../server/queries.ts';
+import type { getDeathMap } from '../../server/deathmap.ts';
 import { ChampIcon, ChartTooltip, ItemIcon, ResultBadge, fmt, useApi } from '../lib.tsx';
+import { DeathMap, DeathMapLegend, describePoint } from '../DeathMap.tsx';
 
 type Detail = NonNullable<Awaited<ReturnType<typeof getMatchDetail>>>;
 type P = Detail['me'];
+type DeathMapData = Awaited<ReturnType<typeof getDeathMap>>;
 type Named = { id: number; name: string };
 type Runes = { primaryStyle: Named | null; subStyle: Named | null; keystone: Named | null; primary: Named[]; secondary: Named[] };
 
@@ -69,14 +72,18 @@ export function MatchDetail({ matchId }: { matchId: string }) {
       <h2>全員のスタッツ</h2>
       <Scoreboard rows={data.participants} myTeamId={m.myTeamId} durationSec={m.durationSec} />
 
+      <h2>タイムライン</h2>
+      <div className="timeline-wrap">
+        <Timeline events={data.events} />
+        <MiniMap matchId={m.matchId} />
+      </div>
+
       <div className="grid2" style={{ marginTop: 8 }}>
-        <section>
-          <h2>タイムライン</h2>
-          <Timeline events={data.events} />
-        </section>
         <section>
           <h2>ビルド（購入順）</h2>
           <Build items={data.items} finalItems={me.items as { id: number; name: string }[]} version={m.ddragonVersion} />
+        </section>
+        <section>
           <h2>振り返り</h2>
           <Review groups={data.reviews} />
         </section>
@@ -327,6 +334,33 @@ function Timeline({ events }: { events: Detail['events'] }) {
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+function MiniMap({ matchId }: { matchId: string }) {
+  const { data, error } = useApi<DeathMapData>(`/api/deaths?kind=both&matchId=${encodeURIComponent(matchId)}`);
+  const [normalize, setNormalize] = useState(true);
+  if (error) return <div className="card muted">{error}</div>;
+  if (!data) return <div className="card muted">読み込み中…</div>;
+  const deaths = data.points.filter((p) => p.kind === 'death');
+  return (
+    <div className="card">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6, gap: 8 }}>
+        <b>キル・デスの位置</b>
+        <span className="muted small">デス {deaths.length} / キル {data.points.length - deaths.length}</span>
+      </div>
+      <DeathMapLegend showKill />
+      <DeathMap points={data.points} bounds={data.bounds} mapImage={data.mapImage} normalize={normalize} labels linkToMatch={false} />
+      <label className="small muted" style={{ display: 'flex', gap: 4, marginTop: 8 }}>
+        <input type="checkbox" checked={normalize} onChange={(e) => setNormalize(e.target.checked)} />
+        自陣を左下に揃える{data.points[0]?.side === 'red' ? '（この試合はレッド側）' : ''}
+      </label>
+      {deaths.length > 0 && (
+        <ul className="small" style={{ margin: '8px 0 0', paddingLeft: 18 }}>
+          {deaths.map((p, i) => <li key={i}>{describePoint(p, false)}・{p.zone}</li>)}
+        </ul>
+      )}
     </div>
   );
 }
