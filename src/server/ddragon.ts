@@ -152,3 +152,28 @@ export class Resolver {
     return { Q: spells[0].name, W: spells[1].name, E: spells[2].name, R: spells[3].name };
   }
 }
+
+/**
+ * サモナーズリフトのマップ画像（map11.png）。data/ddragon/<version>/img/map/ にキャッシュする。
+ * オフラインで最新版が取れないときは、キャッシュ済みの古いバージョンを使う。
+ */
+export async function getMapImage(): Promise<Buffer> {
+  const rel = path.join('img', 'map', 'map11.png');
+  const versions = await getVersions();
+  const latest = path.join(config.ddragonDir, versions[0], rel);
+  if (fs.existsSync(latest)) return fs.readFileSync(latest);
+  try {
+    const res = await fetch(`${BASE}/cdn/${versions[0]}/img/map/map11.png`);
+    if (!res.ok) throw new Error(`Data Dragon の取得に失敗: ${res.status} map11.png`);
+    const buf = Buffer.from(await res.arrayBuffer());
+    fs.mkdirSync(path.dirname(latest), { recursive: true });
+    fs.writeFileSync(latest, buf);
+    return buf;
+  } catch (e) {
+    for (const v of versions) {
+      const f = path.join(config.ddragonDir, v, rel);
+      if (fs.existsSync(f)) return fs.readFileSync(f);
+    }
+    throw e;
+  }
+}

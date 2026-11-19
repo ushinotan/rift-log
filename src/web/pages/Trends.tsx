@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { getTrends } from '../../server/queries.ts';
 import { ChartTooltip, navigate, useApi } from '../lib.tsx';
+import { DeathMapSection } from './DeathMapSection.tsx';
 
 type T = Awaited<ReturnType<typeof getTrends>>;
 type Group = T['byChampion'][number];
@@ -35,6 +36,8 @@ export function Trends() {
         <SeriesChart title="デス数" data={data.series} dataKey="deaths" />
         <SeriesChart title="キル関与（%）" data={data.series} dataKey="killParticipation" unit="%" />
       </div>
+
+      <DeathMapSection />
 
       <div className="grid2" style={{ marginTop: 8 }}>
         <section>
