@@ -31,6 +31,7 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
       return d ? send(res, 200, d) : send(res, 404, { error: '試合が見つかりません' });
     }
     if (p === '/trends') return send(res, 200, await getTrends());
+    if (p === '/filter-options') return send(res, 200, await getFilterOptions());
     if (p === '/deaths') {
       const q = url.searchParams;
       const kind = q.get('kind');
@@ -41,7 +42,7 @@ export async function handle(req: IncomingMessage, res: ServerResponse) {
         await getDeathMap({
           champion: q.get('champion') || undefined,
           role: q.get('role') || undefined,
-          limit: Number.isFinite(limit) && limit > 0 ? limit : undefined,
+          limit: Number.isInteger(limit) && limit > 0 ? limit : undefined,
           kind: kind === 'kill' || kind === 'both' ? kind : 'death',
           matchId: q.get('matchId') || undefined,
         }),

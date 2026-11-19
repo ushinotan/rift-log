@@ -5,7 +5,7 @@ import { and, asc, desc, eq, inArray, lt } from 'drizzle-orm';
 import { openDb, schema } from './db/index.ts';
 import { getMatchDetail } from './queries.ts';
 import { mmss, roleLabel } from './labels.ts';
-import { normalizePos, sideOf, zoneOf } from './deathmap.ts';
+import { normalizePos, sideOf, zoneOf } from './map.ts';
 
 const { matches, participants, teamStats, reviews } = schema;
 const HISTORY = 5;
@@ -141,7 +141,7 @@ export async function buildReviewData(matchId: string) {
     skillOrderDetail: d.skills.map((s) => ({ level: s.level, slot: s.slot, skill: s.skill, time: mmss(s.timeSec) })),
     build: d.items.map((i) => ({ time: i.time, action: i.action, item: i.item })),
     objectives,
-    // エリアは自陣基準（レッド側の試合は座標を回転してから判定）
+    // エリアは自陣基準（レッド側の試合は座標を川の対角線で反転（鏡映）してから判定。180° 回転ではない）
     myDeaths: d.events.filter((e) => e.myInvolvement === 'デス').map((e) => {
       const n = e.x !== null && e.y !== null ? normalizePos(e.x, e.y, sideOf(m.myTeamId)) : null;
       return { ...ev(e), エリア: n ? zoneOf(n.x, n.y) : null };

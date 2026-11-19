@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import type { getDeathMap } from '../../server/deathmap.ts';
+import type { getFilterOptions } from '../../server/queries.ts';
 import { ZONES } from '../../server/map.ts';
-import { DeathMap, DeathMapLegend, TIME_BANDS, bandOf, isSolo } from '../DeathMap.tsx';
+import { DeathMap, DeathMapLegend, TIME_BANDS, bandOf, isExecution, isSolo } from '../DeathMap.tsx';
 import { useApi } from '../lib.tsx';
 
 type D = Awaited<ReturnType<typeof getDeathMap>>;
+type Options = Awaited<ReturnType<typeof getFilterOptions>>;
 
 const LIMITS = [10, 20, 50, 0] as const;
 const pct = (n: number, d: number) => (d ? `${Math.round((n / d) * 100)}%` : '-');
@@ -22,10 +24,13 @@ export function DeathMapSection() {
   if (role) qs.set('role', role);
   if (limit) qs.set('limit', String(limit));
   const { data, error } = useApi<D>(`/api/deaths?${qs}`);
+  // 選択肢はフィルタで変わらないので最初に一度だけ取る
+  const { data: options } = useApi<Options>('/api/filter-options');
 
   const deaths = data?.points.filter((p) => p.kind === 'death') ?? [];
   const kills = data?.points.filter((p) => p.kind === 'kill') ?? [];
   const solo = deaths.filter(isSolo).length;
+  const executions = deaths.filter(isExecution).length;
   const zones = ZONES.map((z) => ({ zone: z, n: deaths.filter((p) => p.zone === z).length })).filter((z) => z.n > 0).sort((a, b) => b.n - a.n);
 
   return (
@@ -34,11 +39,11 @@ export function DeathMapSection() {
       <div className="filters">
         <select value={champion} onChange={(e) => setChampion(e.target.value)}>
           <option value="">チャンピオン: すべて</option>
-          {data?.options?.champions.map((c) => <option key={c} value={c}>{c}</option>)}
+          {options?.champions.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
         <select value={role} onChange={(e) => setRole(e.target.value)}>
           <option value="">ロール: すべて</option>
-          {data?.options?.roles.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+          {options?.roles.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
         </select>
         <select value={limit} onChange={(e) => setLimit(Number(e.target.value))}>
           {LIMITS.map((n) => <option key={n} value={n}>{n ? `直近 ${n} 試合` : '全試合'}</option>)}
@@ -66,7 +71,7 @@ export function DeathMapSection() {
               <div>
                 <h3>ソロデス率</h3>
                 <div className="big">{pct(solo, deaths.length)}</div>
-                <div className="muted small">1対1で倒された {solo}回</div>
+                <div className="muted small">1対1で倒された {solo}回{executions ? `・処刑 ${executions}回` : ''}</div>
               </div>
               {showKill && (
                 <div>

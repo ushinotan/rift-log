@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { DeathPoint } from '../server/deathmap.ts';
 import { normalizePos } from '../server/map.ts';
 import { mmss, navigate } from './lib.tsx';
@@ -14,8 +14,14 @@ export const TIME_BANDS = [
 ] as const;
 export const bandOf = (sec: number) => TIME_BANDS.find((b) => sec < b.until)!;
 
-/** 1対1か（デス: 関与した敵が1人以下 / キル: 自分だけで倒した） */
-export const isSolo = (p: DeathPoint) => (p.kind === 'death' ? p.enemyCount <= 1 : p.allyCount <= 1);
+/** 処刑（タワー・ミニオンなどチャンピオン以外に倒された）デス */
+export const isExecution = (p: DeathPoint) => p.kind === 'death' && p.enemy === null;
+
+/** 1対1か（デス: 敵チャンピオン1人だけに倒された / キル: 自分だけで倒した）。処刑は含めない */
+export const isSolo = (p: DeathPoint) => (p.kind === 'death' ? p.enemy !== null && p.enemyCount <= 1 : p.allyCount <= 1);
+
+/** 点を見分けるキー（同じ試合・同じ時刻にデスとキルが重なることがあるので kind も入れる） */
+const keyOf = (p: DeathPoint) => `${p.matchId}:${p.timeSec}:${p.kind}:${p.x}:${p.y}`;
 
 export function describePoint(p: DeathPoint, withMatch = true) {
   const t = mmss(p.timeSec);
@@ -39,6 +45,10 @@ function Marker({ p, x, y }: { p: DeathPoint; x: number; y: number }) {
   const fill = kill ? 'var(--dm-kill-fill)' : color;
   const stroke = kill ? color : 'var(--dm-outline)';
   const sw = kill ? 5 : 2.5;
+  if (isExecution(p)) {
+    const s = R * 0.9;
+    return <rect x={x - s} y={y - s} width={s * 2} height={s * 2} rx={2} fill={fill} stroke={stroke} strokeWidth={sw} />;
+  }
   if (isSolo(p)) {
     return (
       <>
@@ -77,7 +87,9 @@ export function DeathMap({
   linkToMatch?: boolean;
   maxWidth?: number;
 }) {
-  const [hover, setHover] = useState<number | null>(null);
+  const [hover, setHover] = useState<string | null>(null);
+  // フィルタ切り替えなどで点が入れ替わったら、前のホバーは外す
+  useEffect(() => setHover(null), [points]);
   const [minX, minY] = bounds.min;
   const [maxX, maxY] = bounds.max;
   const toView = (p: DeathPoint) => {
@@ -85,20 +97,20 @@ export function DeathMap({
     // 画面は y が下向きなので反転
     return { vx: ((x - minX) / (maxX - minX)) * VIEW, vy: (1 - (y - minY) / (maxY - minY)) * VIEW };
   };
-  const placed = points.map((p, i) => ({ p, i, ...toView(p) }));
-  const h = hover === null ? null : placed[hover];
+  const placed = points.map((p) => ({ p, key: keyOf(p), ...toView(p) }));
+  const h = hover === null ? null : (placed.find((x) => x.key === hover) ?? null);
 
   return (
     <div className="deathmap" style={{ maxWidth }}>
       <img src={mapImage} alt="サモナーズリフト" draggable={false} />
       <svg viewBox={`0 0 ${VIEW} ${VIEW}`} role="img" aria-label={`${points.length}件の地点`}>
         {/* デスの上にキルを重ねる */}
-        {[...placed].sort((a, b) => (a.p.kind === b.p.kind ? 0 : a.p.kind === 'kill' ? 1 : -1)).map(({ p, i, vx, vy }) => (
+        {[...placed].sort((a, b) => (a.p.kind === b.p.kind ? 0 : a.p.kind === 'kill' ? 1 : -1)).map(({ p, key, vx, vy }) => (
           <g
-            key={i}
+            key={key}
             className={linkToMatch ? 'pt link' : 'pt'}
-            onMouseEnter={() => setHover(i)}
-            onMouseLeave={() => setHover((c) => (c === i ? null : c))}
+            onMouseEnter={() => setHover(key)}
+            onMouseLeave={() => setHover((c) => (c === key ? null : c))}
             onClick={linkToMatch ? () => navigate(`/match/${p.matchId}`) : undefined}
           >
             <Marker p={p} x={vx} y={vy} />
@@ -113,9 +125,10 @@ export function DeathMap({
         <div
           className="chart-tip dm-tip"
           style={{
-            left: `${(h.vx / VIEW) * 100}%`,
-            top: `${(h.vy / VIEW) * 100}%`,
-            transform: `translate(${h.vx > VIEW * 0.6 ? 'calc(-100% - 14px)' : '14px'}, ${h.vy > VIEW * 0.75 ? 'calc(-100% - 6px)' : '-50%'})`,
+            left: `clamp(0px, calc(${(h.vx / VIEW) * 100}% - var(--tip-w) / 2), calc(100% - var(--tip-w)))`,
+            ...(h.vy > VIEW / 2
+              ? { bottom: `calc(${100 - (h.vy / VIEW) * 100}% + 24px)` }
+              : { top: `calc(${(h.vy / VIEW) * 100}% + 24px)` }),
           }}
         >
           <div style={{ fontWeight: 600 }}>{describePoint(h.p, linkToMatch)}</div>
@@ -139,7 +152,7 @@ export function DeathMapLegend({ showKill }: { showKill: boolean }) {
           {b.label}
         </span>
       ))}
-      <span>● 1対1 / ▲ 2人以上</span>
+      <span>● 1対1 / ▲ 2人以上 / ■ 処刑</span>
       {showKill && <span>塗り = デス / 輪 = キル</span>}
     </div>
   );

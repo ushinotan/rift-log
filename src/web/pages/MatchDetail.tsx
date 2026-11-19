@@ -4,6 +4,7 @@ import type { getMatchDetail } from '../../server/queries.ts';
 import type { getDeathMap } from '../../server/deathmap.ts';
 import { ChampIcon, ChartTooltip, ItemIcon, ResultBadge, fmt, useApi } from '../lib.tsx';
 import { DeathMap, DeathMapLegend, describePoint } from '../DeathMap.tsx';
+import { sideOf, type Side } from '../../server/map.ts';
 
 type Detail = NonNullable<Awaited<ReturnType<typeof getMatchDetail>>>;
 type P = Detail['me'];
@@ -75,7 +76,7 @@ export function MatchDetail({ matchId }: { matchId: string }) {
       <h2>タイムライン</h2>
       <div className="timeline-wrap">
         <Timeline events={data.events} />
-        <MiniMap matchId={m.matchId} />
+        <MiniMap matchId={m.matchId} side={sideOf(m.myTeamId)} />
       </div>
 
       <div className="grid2" style={{ marginTop: 8 }}>
@@ -338,7 +339,7 @@ function Timeline({ events }: { events: Detail['events'] }) {
   );
 }
 
-function MiniMap({ matchId }: { matchId: string }) {
+function MiniMap({ matchId, side }: { matchId: string; side: Side }) {
   const { data, error } = useApi<DeathMapData>(`/api/deaths?kind=both&matchId=${encodeURIComponent(matchId)}`);
   const [normalize, setNormalize] = useState(true);
   if (error) return <div className="card muted">{error}</div>;
@@ -354,7 +355,7 @@ function MiniMap({ matchId }: { matchId: string }) {
       <DeathMap points={data.points} bounds={data.bounds} mapImage={data.mapImage} normalize={normalize} labels linkToMatch={false} />
       <label className="small muted" style={{ display: 'flex', gap: 4, marginTop: 8 }}>
         <input type="checkbox" checked={normalize} onChange={(e) => setNormalize(e.target.checked)} />
-        自陣を左下に揃える{data.points[0]?.side === 'red' ? '（この試合はレッド側）' : ''}
+        自陣を左下に揃える{side === 'red' ? '（この試合はレッド側）' : ''}
       </label>
       {deaths.length > 0 && (
         <ul className="small" style={{ margin: '8px 0 0', paddingLeft: 18 }}>

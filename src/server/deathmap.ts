@@ -1,18 +1,13 @@
 /**
- * デスマップ用のデータ（自分のデス・キルの座標）と、座標からのエリア判定。
+ * デスマップ用のデータ（自分のデス・キルの座標）を DB から読む。
+ * 座標の正規化とエリア判定は map.ts。
  */
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { openDb, schema } from './db/index.ts';
-import { getFilterOptions } from './queries.ts';
 import { roleLabel } from './labels.ts';
+import { MAP_BOUNDS, normalizePos, sideOf, zoneOf, type Side, type Zone } from './map.ts';
 
 const { matches, events } = schema;
-
-import { MAP_BOUNDS, normalizePos, zoneOf, type Side, type Zone } from './map.ts';
-
-export { MAP_BOUNDS, normalizePos, zoneOf, ZONES, type Side, type Zone } from './map.ts';
-
-export const sideOf = (teamId: number): Side => (teamId === 200 ? 'red' : 'blue');
 
 export type DeathPoint = {
   matchId: string;
@@ -21,7 +16,7 @@ export type DeathPoint = {
   x: number;
   y: number;
   kind: 'death' | 'kill';
-  /** デス: 倒した敵 / キル: 倒した敵。処刑（タワー・ミニオン）は null */
+  /** デス: 倒した敵 / キル: 倒した敵。処刑（タワー・ミニオン）は null（ソロデスには数えない） */
   enemy: string | null;
   /** デスに関与した敵の人数（killer + assists）。キルは 1 */
   enemyCount: number;
@@ -94,6 +89,6 @@ export async function getDeathPoints(f: DeathFilter = {}): Promise<{ points: Dea
 }
 
 export async function getDeathMap(f: DeathFilter) {
-  const [{ points, matchCount }, options] = await Promise.all([getDeathPoints(f), f.matchId ? null : getFilterOptions()]);
-  return { mapImage: '/api/ddragon/map11.png', bounds: MAP_BOUNDS, matchCount, points, options };
+  const { points, matchCount } = await getDeathPoints(f);
+  return { mapImage: '/api/ddragon/map11.png', bounds: MAP_BOUNDS, matchCount, points };
 }

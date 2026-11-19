@@ -143,7 +143,8 @@ tr.me td { background: var(--me-bg); font-weight: 600; }
 .deathmap svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .deathmap .pt.link { cursor: pointer; }
 .deathmap .dm-label { font-size: 26px; font-weight: 700; fill: #fff; paint-order: stroke; stroke: #111; stroke-width: 6px; pointer-events: none; }
-.dm-tip { position: absolute; pointer-events: none; white-space: nowrap; z-index: 5; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18); }
+.deathmap { --tip-w: min(280px, 100%); }
+.dm-tip { position: absolute; width: var(--tip-w); pointer-events: none; white-space: normal; overflow-wrap: anywhere; z-index: 5; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18); }
 .dm-layout { display: grid; grid-template-columns: minmax(0, 560px) minmax(220px, 1fr); gap: 20px; align-items: start; }
 .dm-stats h3 { font-size: 13px; margin: 0 0 6px; color: var(--text-2); font-weight: 500; }
 .dm-stats .big { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
