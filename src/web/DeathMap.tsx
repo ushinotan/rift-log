@@ -14,10 +14,10 @@ export const TIME_BANDS = [
 ] as const;
 export const bandOf = (sec: number) => TIME_BANDS.find((b) => sec < b.until)!;
 
-/** 処刑（タワー・ミニオンなどチャンピオン以外に倒された）デス */
+/** エクスキュート（タワー・ミニオンなどチャンピオン以外に倒された）デス */
 export const isExecution = (p: DeathPoint) => p.kind === 'death' && p.enemy === null;
 
-/** 1対1か（デス: 敵チャンピオン1人だけに倒された / キル: 自分だけで倒した）。処刑は含めない */
+/** 1対1か（デス: 敵チャンピオン1人だけに倒された / キル: 自分だけで倒した）。エクスキュートは含めない */
 export const isSolo = (p: DeathPoint) => (p.kind === 'death' ? p.enemy !== null && p.enemyCount <= 1 : p.allyCount <= 1);
 
 /** 点を見分けるキー（同じ試合・同じ時刻にデスとキルが重なることがあるので kind も入れる） */
@@ -27,7 +27,7 @@ export function describePoint(p: DeathPoint, withMatch = true) {
   const t = mmss(p.timeSec);
   const tail = withMatch ? `（${p.matchId} / ${p.result}）` : '';
   if (p.kind === 'death') {
-    if (!p.enemy) return `${t} 処刑された${tail}`;
+    if (!p.enemy) return `${t} エクスキュートされた${tail}`;
     const others = p.enemyCount - 1;
     return `${t} ${p.enemy}${others > 0 ? `他${others}人` : ''}に倒された${tail}`;
   }
@@ -152,7 +152,7 @@ export function DeathMapLegend({ showKill }: { showKill: boolean }) {
           {b.label}
         </span>
       ))}
-      <span>● 1対1 / ▲ 2人以上 / ■ 処刑</span>
+      <span>● 1対1 / ▲ 2人以上 / ■ エクスキュート</span>
       {showKill && <span>塗り = デス / 輪 = キル</span>}
     </div>
   );

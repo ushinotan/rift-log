@@ -16,7 +16,7 @@ export type DeathPoint = {
   x: number;
   y: number;
   kind: 'death' | 'kill';
-  /** デス: 倒した敵 / キル: 倒した敵。処刑（タワー・ミニオン）は null（ソロデスには数えない） */
+  /** デス: 倒した敵 / キル: 倒した敵。エクスキュート（タワー・ミニオン）は null（ソロデスには数えない） */
   enemy: string | null;
   /** デスに関与した敵の人数（killer + assists）。キルは 1 */
   enemyCount: number;

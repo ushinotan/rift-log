@@ -71,7 +71,7 @@ export function DeathMapSection() {
               <div>
                 <h3>ソロデス率</h3>
                 <div className="big">{pct(solo, deaths.length)}</div>
-                <div className="muted small">1対1で倒された {solo}回{executions ? `・処刑 ${executions}回` : ''}</div>
+                <div className="muted small">1対1で倒された {solo}回{executions ? `・エクスキュート ${executions}回` : ''}</div>
               </div>
               {showKill && (
                 <div>

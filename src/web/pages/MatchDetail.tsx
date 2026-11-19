@@ -320,7 +320,7 @@ function Timeline({ events }: { events: Detail['events'] }) {
             <span className="small">
               {e.type === 'キル' ? (
                 <>
-                  {e.killer ?? '処刑'} → {e.victim}
+                  {e.killer ?? 'エクスキュート'} → {e.victim}
                   {(e.assists as string[] | null)?.length ? <span className="muted">（アシスト: {(e.assists as string[]).join('、')}）</span> : null}
                   {e.detail && <b> {e.detail}</b>}
                 </>
