@@ -26,19 +26,21 @@ export const ZONES = ['自陣ベース', '敵陣ベース', 'トップレーン'
 export type Zone = (typeof ZONES)[number];
 
 /**
- * ベースの範囲。インヒビタータワー（≈ (1170, 4290), (3650, 3700), (4280, 1250)）の内側。
- * x・y それぞれの上限に加えて、ミッド側の角を x + y で落とす。座標はベースの角からの距離。
+ * 自陣ベースの範囲（自陣が左下の座標）。インヒビタータワー（≈ (1170, 4290), (3650, 3700), (4280, 1250)）
+ * より少し外側に線を引き、タワー下のデスはどのレーンでもベースに入れる。
+ * x・y それぞれの上限に加えて、ミッド側の角を x + y で落とす。
  */
-const inBase = (dx: number, dy: number) => dx < 4300 && dy < 4300 && dx + dy < 7300;
+const inOwnBase = (x: number, y: number) => x < 4600 && y < 4600 && x + y < 7700;
 
 /**
  * 大まかなエリア判定（簡易版）。座標は normalizePos 済み（自陣が左下）であること。
  * ベース → サイドレーン → ミッド → 川 → ジャングルの順に判定する。
  */
 export function zoneOf(x: number, y: number): Zone {
-  const [mx, my] = MAP_BOUNDS.max;
-  if (inBase(x, y)) return '自陣ベース';
-  if (inBase(mx - x, my - y)) return '敵陣ベース';
+  if (inOwnBase(x, y)) return '自陣ベース';
+  // 敵陣ベースは normalizePos と同じ川の対角線での反転で自陣側に写して判定する。
+  // MAP_BOUNDS.max の角から測ると、反転の基準（RIVER_C）とずれて陣営で境界が変わってしまう
+  if (inOwnBase(RIVER_C - y, RIVER_C - x)) return '敵陣ベース';
   if (x < 2100 || y > 12800) return 'トップレーン';
   if (y < 2100 || x > 12700) return 'ボットレーン';
   if (Math.abs(x - y) < 1300) return 'ミッドレーン';
