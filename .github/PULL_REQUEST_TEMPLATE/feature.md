@@ -36,7 +36,10 @@ Closes #
 - 
 
 ## 確認
-- [ ] `npm run typecheck`
+### CI（PR で自動で回る）
+- [ ] `typecheck`（手元でも `npm run typecheck` を通した）
+
+### 手で確かめたこと
 - [ ] `npm run dev` で画面 / API を確認（確認した matchId: ）
 - [ ] ブルー側・レッド側の試合の両方
 - [ ] ライト / ダークモードの両方

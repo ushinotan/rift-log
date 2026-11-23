@@ -5,6 +5,7 @@
 - backend（`src/server/`）: Riot API・Data Dragon の取得、SQLite（libSQL）+ Drizzle ORM、JSON API。API は Vite 開発サーバーのミドルウェアとして動く（`vite.config.ts` の `riftLogApi`）。
 - CLI（`src/cli/`）: `tsx` で直接実行する `npm run` コマンド。`lol-review` スキル（`.claude/skills/lol-review/SKILL.md`）から使う。
 - frontend（`src/web/`）: React 19 + Vite 8。ルーターは使わず `location.hash` で切り替える。グラフは Recharts 3、スタイルは素の CSS（`styles.css`）。
+- CI: GitHub Actions（`.github/workflows/pr-test.yml`）が PR と `master` への push で `npm ci` + `npm run typecheck` を流す。
 - テスト、リンター、E2E はまだ無い。確認は `npm run typecheck` と、`npm run dev`（http://localhost:5173）での目視。
 
 ## 構成
