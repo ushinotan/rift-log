@@ -1,0 +1,32 @@
+name: PR テスト
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+# 権限は読み取りだけ。ジョブ側で広げない。secrets は使わない（Riot API も呼ばない）
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-test-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # ジョブ名はブランチ保護の必須チェック名になるので変えない
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
