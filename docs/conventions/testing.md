@@ -2,6 +2,17 @@
 
 テストランナー、リンター、E2E はまだ入っていません。入れるときはこのファイルと `docs/factory.config.md` の `stack.*.test` / `tests.*` / `docker.run` を同じ PR で埋めます。
 
+## CI
+
+- PR（`master` 向け）と `master` への push で、GitHub Actions（`.github/workflows/pr-test.yml`）が `npm ci` と `npm run typecheck` を流す。今の CI は型検査だけで、単体テスト・E2E はまだ回らない。
+- **必須**: CI が通ってからマージする。
+- **必須**: PR を出す前に、CI と同じコマンドを手元で流す。
+
+  ```bash
+  npm ci
+  npm run typecheck
+  ```
+
 ## 今の確認方法
 
 - **必須**: PR を出す前に型検査を通す。

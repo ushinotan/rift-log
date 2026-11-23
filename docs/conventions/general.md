@@ -43,7 +43,8 @@ docs📝: factory プラグイン用の CodeBase マップ docs/codebase を追�
 
 - **必須**: 本文は `.github/pull_request_template.md`（機能は `PULL_REQUEST_TEMPLATE/feature.md`、バグ修正は `bugfix.md`）を埋める。先頭の `Closes #番号` は消さない（factory の github ドライバーが PR と issue を結び付けるのに使う）。
 - **必須**: 当てはまらない節は消さずに「なし」と書く。
-- **必須**: `## 確認` には `npm run typecheck` と、画面を変えたなら確認した試合（matchId）とライト / ダークモードの両方を見たことを書く。
+- **必須**: `## 確認` は「CI（PR で自動で回る）」と「手で確かめたこと」に分かれている。CI の欄には `typecheck` の結果（手元でも `npm run typecheck` を通したこと）を、手で確かめたことの欄には、画面を変えたなら確認した試合（matchId）とライト / ダークモードの両方を見たことを書く。
+- **必須**: CI（`.github/workflows/pr-test.yml`）が通ってからマージする。
 - **必須**: DB スキーマ、`npm run match` の出力の形、振り返り JSON の形を変えたら、PR に書き、`README.md` と `.claude/skills/lol-review/SKILL.md` も同じ PR で直す。
 - **必須**: `docs/codebase/` の地図と食い違う変更をしたら、同じ PR で地図も直す。
 - **推奨**: 画面を変えたらスクリーンショットを付ける。
