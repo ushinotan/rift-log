@@ -13,11 +13,23 @@ tracker:
     qa_gate:     { state: open, label: ready-for-qa }
     in_qa:       { state: open, label: in-qa }
     done:        { state: closed }
+    review_gate:     { state: open, label: ready-for-review }    # CR entry — DISTINCT from in_review
+    in_review:       { state: open, label: in-review }
+    review_approved: { state: open, label: review-approved }     # the issue closes when the PR (with "Closes #n") is merged
+    review_returned: { state: open, label: changes-requested }
   labels:
     approved:    approved       # not in the repo yet — create it
     upstream_bug: bug           # existing label
 
 issue:    { prefix: "#", id_regex: '^#?(\d+)$' }
+
+scm:
+  driver:    github
+  repos:                        # single repo: both keys point to the same repository
+    backend:  ushinotan/rift-log
+    frontend: ushinotan/rift-log
+  mr_target: master
+  branch_convention: 'feature/{id}'   # branches made by /factory:dev ({git.branch_prefix.story}{id}); hand-made branches (feature/death-map) are found by the "Closes #n" link instead
 
 git:
   base_branch: origin/master    # origin/HEAD → master; PRs target master (stacked PRs may target a feature branch, e.g. #7)
@@ -115,9 +127,16 @@ models:                         # omitted roles use the plugin defaults (CONTRAC
 - `.env` (Riot API key) and `data/` (SQLite DB, Data Dragon cache) are git-ignored and not copied into worktrees. Symlink `.env` from the main checkout, and point `RIFT_LOG_DB` at the main DB (or let a fresh one be created). The development API key expires every 24h: never type or guess a key; ask the human to regenerate it.
 - There are no tests, no linter and no E2E tool yet. QA factory is deferred until a test runner is chosen. DEV self-test = `npm run typecheck` + starting `npm run dev` and loading the changed screen / `/api/*` endpoint.
 - Names shown to the user (champions, items, runes, spells, skills) come from Data Dragon ja_JP. Don't hardcode English names.
-- Status/approval labels (`in-progress`, `ready-for-qa`, `in-qa`, `approved`) do not exist yet in the repo.
+- Status/approval labels (`in-progress`, `ready-for-qa`, `in-qa`, `ready-for-review`, `in-review`, `review-approved`, `changes-requested`, `approved`) do not exist yet in the repo.
+- QA is deferred, so nothing moves an issue to `review_gate` automatically. After `/factory:dev` hands off (`ready-for-qa`), add the `ready-for-review` label by hand before `/factory:cr`, or let CR warn and confirm.
+- PR bodies follow `.github/pull_request_template.md` (or `PULL_REQUEST_TEMPLATE/feature.md` / `bugfix.md`). Always put `Closes #<id>` at the top so the github driver can link the PR to the issue.
 
 # DEV review hardening (orchestrator instructions)
 Carried over from nikke_unionraid_bot, where the factory review approved diffs that the PR review then rejected.
 - **Stack reviewers after the factory code-review.** The `dev-code-reviewer` agent cannot spawn sub-agents, so the orchestrator does it. When the code-reviewer returns `APPROVED` or `APPROVED_WITH_NOTES`, run the reviewers from the user's CLAUDE.md on the uncommitted diff, in parallel: `typescript-reviewer` (`*.ts`), `react-reviewer` (`*.tsx`), `database-reviewer` (`src/server/db/`, `drizzle/`, `queries.ts`, `ingest.ts`, `deathmap.ts`), and `security-reviewer` when the task touches the Riot API key, `.env`, or the `/api` handler. Merge the findings into `{DIR}/code-review-{id}-{attempt}.md`. A critical or high finding counts as `REJECTED` (back to the developer, consumes a retry). Medium and low findings go into the final report as 🟡.
 - **Narrowed scope.** When the tech-lead narrows the issue's acceptance criteria, ask the human before the developer starts. The PR body then says which criteria moved to which issue (see PR #4 "issue の仕様から変えた点").
+
+# CR review hardening (orchestrator instructions)
+- **Stack reviewers in addition to the CR workers.** Alongside `cr-reviewer` and `cr-security`, run the same stack reviewers as in DEV on the PR diff (`gh pr diff`), in parallel. Merge and deduplicate the findings; when labels disagree, keep the higher one.
+- **Report format.** Show the findings to the human in Japanese, ordered `[MUST]` → `[SHOULD]` → `[IMO]` (🔴 → `[MUST]`, 🟡 → `[SHOULD]`, 🟢/📄 → `[IMO]`), each with a short summary for humans and a collapsed "🤖 AI対応用プロンプト". End with what was good.
+- **Posting on the PR.** Instead of a single `gh pr comment` (SCM op S4), post one review with `gh api repos/ushinotan/rift-log/pulls/{n}/reviews` and `event: "COMMENT"`: each finding goes into `comments[]` (`path`, `line`, `start_line` for ranges, `side: "RIGHT"`, `body`). The overall verdict, counts per label, good points and findings on lines outside the diff go into the review `body`. The tracker comment (on the issue) stays a normal summary.

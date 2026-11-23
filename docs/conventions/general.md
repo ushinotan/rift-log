@@ -41,7 +41,8 @@ docs📝: factory プラグイン用の CodeBase マップ docs/codebase を追�
 
 ## PR
 
-- **必須**: 本文は `Closes #番号`、`## 概要`、`## 確認`（チェックリスト）を書く。必要なら `## issue の仕様から変えた点`、`## 既知の制限` も書く（PR #4 の形）。
+- **必須**: 本文は `.github/pull_request_template.md`（機能は `PULL_REQUEST_TEMPLATE/feature.md`、バグ修正は `bugfix.md`）を埋める。先頭の `Closes #番号` は消さない（factory の github ドライバーが PR と issue を結び付けるのに使う）。
+- **必須**: 当てはまらない節は消さずに「なし」と書く。
 - **必須**: `## 確認` には `npm run typecheck` と、画面を変えたなら確認した試合（matchId）とライト / ダークモードの両方を見たことを書く。
 - **必須**: DB スキーマ、`npm run match` の出力の形、振り返り JSON の形を変えたら、PR に書き、`README.md` と `.claude/skills/lol-review/SKILL.md` も同じ PR で直す。
 - **必須**: `docs/codebase/` の地図と食い違う変更をしたら、同じ PR で地図も直す。
@@ -58,3 +59,9 @@ docs📝: factory プラグイン用の CodeBase マップ docs/codebase を追�
 - **必須**: 試合の時刻は UNIX ミリ秒（`gameStartMs`）を正とし、表示用の JST 文字列は `labels.ts` の `toJst` で作る。
 - **必須**: 試合内の時刻は秒（`timeSec`）で持ち、表示は `mmss` で `分:秒` にする。
 - 保存日時（`importedAt`、`createdAt`、`fetchedAt`）は `new Date().toISOString()`。
+
+## レビュー
+
+- レビューは観点ごとのレビュアー（TypeScript / React / DB / セキュリティ）に分けて行い、指摘は `[MUST]`（直さないとマージしない）→ `[SHOULD]`（基本は直す）→ `[IMO]`（任意）のラベルを付ける。
+- **必須**: PR への投稿は、まとめコメントではなくインラインコメント（1 件のレビューに各指摘を `comments[]` で入れる）にする。総評・良かった点・差分外の行への指摘はレビュー本文に書く。
+- factory の `/factory:cr` を使うときは、issue に `ready-for-review` ラベルを付けてから実行する（`docs/factory.config.md` の Project notes）。
